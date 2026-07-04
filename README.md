@@ -84,7 +84,8 @@ Required for the default path:
 - A Whisper model path, or a `whisper-cli` default model.
 - LM Studio running a local OpenAI-compatible server.
 - Gemma 4 loaded in LM Studio.
-- A short voice reference WAV for Chatterbox Turbo.
+- A short voice reference WAV for Chatterbox Turbo. It does not need to be your
+  voice.
 
 Gemma 4 may spend part of the generation budget on reasoning before returning
 the final question, so the default follow-up budget is intentionally larger
@@ -102,6 +103,13 @@ uv run --extra live interview-agent devices
 
 Chatterbox Turbo is a voice-cloning TTS model. A voice reference is a short WAV
 clip that tells the model what voice to synthesize.
+
+It does not need to be the user's voice. For a neutral local reference generated
+with macOS `say`:
+
+```sh
+uv run interview-agent make-reference ./voice-reference.wav
+```
 
 Record one:
 
@@ -160,6 +168,7 @@ layout from filenames.
 | `interview-agent doctor` | Check installed tools and optional packages |
 | `interview-agent devices` | List Core Audio input and output devices |
 | `interview-agent record-reference OUT.wav` | Record a Chatterbox Turbo voice reference |
+| `interview-agent make-reference OUT.wav` | Generate a neutral local voice reference with macOS `say` |
 | `interview-agent run` | Start a live microphone interview session |
 | `interview-agent ask-followup transcript.txt` | Ask LM Studio/Gemma for one follow-up |
 

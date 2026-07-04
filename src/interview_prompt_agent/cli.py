@@ -6,6 +6,8 @@ import argparse
 import importlib.util
 import json
 import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 
 from interview_prompt_agent.agent import InterviewAgent
@@ -26,6 +28,8 @@ def main(argv: list[str] | None = None) -> int:
             return run(args)
         if args.command == "record-reference":
             return record_reference(args)
+        if args.command == "make-reference":
+            return make_reference(args)
         if args.command == "ask-followup":
             return ask_followup(args)
     except AgentError as exc:
@@ -73,6 +77,20 @@ def build_parser() -> argparse.ArgumentParser:
     ref_parser.add_argument("output", type=Path)
     ref_parser.add_argument("--seconds", type=float, default=10.0)
     ref_parser.add_argument("--input-device")
+
+    make_ref_parser = sub.add_parser(
+        "make-reference",
+        help="Generate a neutral Chatterbox voice reference with macOS say",
+    )
+    make_ref_parser.add_argument("output", type=Path)
+    make_ref_parser.add_argument("--voice", help="macOS say voice name")
+    make_ref_parser.add_argument(
+        "--text",
+        default=(
+            "This is a neutral local voice reference for an interview prompt agent. "
+            "The voice should sound clear, calm, and conversational."
+        ),
+    )
 
     follow_parser = sub.add_parser("ask-followup", help="Ask local Gemma for one follow-up")
     follow_parser.add_argument("transcript", type=Path)
@@ -155,6 +173,44 @@ def record_reference(args: argparse.Namespace) -> int:
 
     time.sleep(args.seconds)
     recorder.stop(args.output)
+    print(f"Wrote {args.output}")
+    return 0
+
+
+def make_reference(args: argparse.Namespace) -> int:
+    say = shutil.which("say")
+    ffmpeg = shutil.which("ffmpeg")
+    if say is None:
+        raise AgentError("macOS say command was not found")
+    if ffmpeg is None:
+        raise AgentError("ffmpeg is required to convert the generated reference to WAV")
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(suffix=".aiff") as tmp:
+        say_command = [say]
+        if args.voice:
+            say_command.extend(["-v", args.voice])
+        say_command.extend(["-o", tmp.name, args.text])
+        try:
+            subprocess.run(say_command, check=True)
+            subprocess.run(
+                [
+                    ffmpeg,
+                    "-y",
+                    "-i",
+                    tmp.name,
+                    "-ar",
+                    "24000",
+                    "-ac",
+                    "1",
+                    str(args.output),
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except subprocess.CalledProcessError as exc:
+            raise AgentError(f"Could not generate voice reference: {exc}") from exc
     print(f"Wrote {args.output}")
     return 0
 
