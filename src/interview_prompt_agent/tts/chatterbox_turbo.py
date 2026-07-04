@@ -41,7 +41,16 @@ class ChatterboxTurboBackend(TTSBackend):
                 "uv pip install chatterbox-tts"
             ) from exc
         if self._model is None:
-            self._model = ChatterboxTurboTTS.from_pretrained(device=self.device)
+            try:
+                self._model = ChatterboxTurboTTS.from_pretrained(device=self.device)
+            except TypeError as exc:
+                if "NoneType" in str(exc):
+                    raise BackendUnavailableError(
+                        "Chatterbox Turbo could not initialize Perth watermarking. "
+                        "Install the compatibility dependency with: "
+                        "uv pip install 'setuptools<81'"
+                    ) from exc
+                raise
         wav = self._model.generate(text, audio_prompt_path=str(self.voice_reference))
         ta.save(str(path), wav, self._model.sr)
         return path

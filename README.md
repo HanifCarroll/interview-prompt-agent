@@ -66,8 +66,11 @@ uv pip install -U --force-reinstall -v git+https://github.com/TEN-framework/ten-
 Install Chatterbox Turbo:
 
 ```sh
-uv pip install chatterbox-tts
+uv pip install "setuptools<81" chatterbox-tts
 ```
+
+`setuptools<81` is needed because Chatterbox's Perth watermark dependency still
+imports `pkg_resources`.
 
 Install sherpa-onnx support:
 

@@ -8,6 +8,7 @@ import json
 import shutil
 import subprocess
 import tempfile
+import warnings
 from pathlib import Path
 
 from interview_prompt_agent.agent import InterviewAgent
@@ -116,6 +117,18 @@ def doctor(args: argparse.Namespace) -> int:
             checks[label] = "installed"
         else:
             checks[label] = "missing"
+
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            import perth
+
+        if callable(getattr(perth, "PerthImplicitWatermarker", None)):
+            checks["perth-watermarker"] = "installed"
+        else:
+            checks["perth-watermarker"] = "missing; install setuptools<81"
+    except ImportError:
+        checks["perth-watermarker"] = "missing"
 
     gemma_path = Path.home() / ".lmstudio/models/lmstudio-community/gemma-4-26B-A4B-it-GGUF"
     checks["gemma-4-lmstudio"] = str(gemma_path) if gemma_path.exists() else "missing"
