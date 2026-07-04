@@ -1,0 +1,216 @@
+# interview-prompt-agent
+
+`interview-prompt-agent` is a local-first voice prompt agent for recording
+interview-style raw material.
+
+It asks a question, records from the Mac microphone, waits until the speaker
+says `next question`, then generates and speaks the next follow-up.
+
+The main design rule is explicit turn completion. Pauses and long silences are
+treated as thinking time, not as permission for the agent to interrupt.
+
+## Status
+
+Alpha. The repo is structured for public use, but the live voice stack depends
+on local model/runtime setup:
+
+- TEN VAD for speech activity detection.
+- `whisper.cpp` or `sherpa-onnx` for speech-to-text.
+- Chatterbox Turbo for local text-to-speech.
+- LM Studio with Gemma 4 for follow-up questions.
+
+## How It Works
+
+```text
+question -> Chatterbox Turbo TTS -> microphone recording
+                                      |
+                                      v
+                         TEN VAD checks recent speech windows
+                                      |
+                                      v
+                     STT transcribes only recent control audio
+                                      |
+                                      v
+                     "next question" at the end stops the turn
+                                      |
+                                      v
+                 full answer is transcribed and sent to Gemma
+                                      |
+                                      v
+                         next follow-up question is spoken
+```
+
+VAD means Voice Activity Detection. It detects whether speech is present in an
+audio frame. It does not decide whether the speaker is done.
+
+## Install
+
+Clone and install the light development environment:
+
+```sh
+uv sync --extra dev
+```
+
+Install live microphone support:
+
+```sh
+uv sync --extra dev --extra live
+```
+
+Install TEN VAD:
+
+```sh
+uv pip install -U --force-reinstall -v git+https://github.com/TEN-framework/ten-vad.git
+```
+
+Install Chatterbox Turbo:
+
+```sh
+uv pip install chatterbox-tts
+```
+
+Install sherpa-onnx support:
+
+```sh
+uv pip install sherpa-onnx
+```
+
+## Local Requirements
+
+Required for the default path:
+
+- macOS microphone permission for the terminal app.
+- `whisper-cli` from `whisper.cpp`.
+- A Whisper model path, or a `whisper-cli` default model.
+- LM Studio running a local OpenAI-compatible server.
+- Gemma 4 loaded in LM Studio.
+- A short voice reference WAV for Chatterbox Turbo.
+
+Check the environment:
+
+```sh
+uv run interview-agent doctor
+uv run interview-agent doctor --json
+uv run --extra live interview-agent devices
+```
+
+## Voice Reference
+
+Chatterbox Turbo is a voice-cloning TTS model. A voice reference is a short WAV
+clip that tells the model what voice to synthesize.
+
+Record one:
+
+```sh
+uv run --extra live interview-agent record-reference ./voice-reference.wav \
+  --input-device "MacBook Pro Microphone"
+```
+
+Use a clean 10-second clip with normal speaking volume. The reference is local;
+do not commit it to the repo.
+
+## Quick Start
+
+Run with `whisper.cpp`, TEN VAD, Chatterbox Turbo, and LM Studio/Gemma:
+
+```sh
+uv run --extra live interview-agent run \
+  --voice-reference ./voice-reference.wav \
+  --input-device "MacBook Pro Microphone" \
+  --whisper-model /path/to/ggml-small.bin \
+  --initial-question "What idea should we turn into video raw material?"
+```
+
+Say `next question` when the answer is complete. Long pauses are allowed.
+
+For a lower-friction smoke test without Chatterbox:
+
+```sh
+uv run --extra live interview-agent run \
+  --tts macos_say \
+  --followup static \
+  --input-device "MacBook Pro Microphone" \
+  --whisper-model /path/to/ggml-small.bin
+```
+
+Use the sherpa-onnx STT adapter:
+
+```sh
+uv run --extra live interview-agent run \
+  --stt sherpa_onnx \
+  --sherpa-model-dir /path/to/sherpa/model \
+  --sherpa-model-kind auto \
+  --tts macos_say \
+  --followup static
+```
+
+The sherpa adapter supports common offline sherpa layouts: transducer
+`encoder`/`decoder`/`joiner`, sherpa Whisper `encoder`/`decoder`, Paraformer,
+NeMo CTC, and WeNet CTC. Use `--sherpa-model-kind` when `auto` cannot infer the
+layout from filenames.
+
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `interview-agent doctor` | Check installed tools and optional packages |
+| `interview-agent devices` | List Core Audio input and output devices |
+| `interview-agent record-reference OUT.wav` | Record a Chatterbox Turbo voice reference |
+| `interview-agent run` | Start a live microphone interview session |
+| `interview-agent ask-followup transcript.txt` | Ask LM Studio/Gemma for one follow-up |
+
+## Outputs
+
+Each session writes a timestamped directory:
+
+```text
+sessions/
+  20260704-181530/
+    answer-001.wav
+    answer-001.partial.wav
+    answer-001.tail.wav
+    session.json
+```
+
+`session.json` records questions, answer audio paths, control transcripts, final
+transcripts, and the done phrase that stopped each turn.
+
+## Backend Boundaries
+
+The project keeps backends behind small interfaces:
+
+```python
+class VADBackend:
+    def speech_segments(self, path): ...
+
+class STTBackend:
+    def transcribe_file(self, path): ...
+
+class TTSBackend:
+    def speak(self, text): ...
+
+class FollowupBackend:
+    def next_question(self, transcript_so_far): ...
+```
+
+That makes it possible to swap `whisper.cpp` and `sherpa-onnx` without changing
+the session loop.
+
+## Privacy
+
+No background recording. The microphone is used only during an explicit
+`interview-agent run` session.
+
+Raw audio and transcripts are written locally. The default follow-up backend
+sends transcript text to LM Studio on `localhost`; it does not send audio to a
+remote API.
+
+## Development
+
+```sh
+uv run --extra dev pytest
+uv run --extra dev ruff check .
+```
+
+Keep generated `sessions/` data, voice references, and local model paths out of
+commits.
