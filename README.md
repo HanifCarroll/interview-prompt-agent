@@ -86,6 +86,10 @@ Required for the default path:
 - Gemma 4 loaded in LM Studio.
 - A short voice reference WAV for Chatterbox Turbo.
 
+Gemma 4 may spend part of the generation budget on reasoning before returning
+the final question, so the default follow-up budget is intentionally larger
+than a short answer appears to need.
+
 Check the environment:
 
 ```sh

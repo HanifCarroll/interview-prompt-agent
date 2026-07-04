@@ -31,8 +31,8 @@ class LMStudioFollowupBackend(FollowupBackend):
                 {"role": "system", "content": "Ask concise interview follow-up questions."},
                 {"role": "user", "content": prompt},
             ],
-            "temperature": 0.7,
-            "max_tokens": 80,
+            "temperature": 0.4,
+            "max_tokens": 1024,
         }
         request = urllib.request.Request(
             self.url,
@@ -52,7 +52,16 @@ class LMStudioFollowupBackend(FollowupBackend):
             content = data["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:
             raise BackendUnavailableError(f"Unexpected LM Studio response: {data}") from exc
-        question = " ".join(str(content).strip().split())
-        if not question.endswith("?"):
-            question = f"{question}?"
-        return question
+        return _clean_question(content)
+
+
+def _clean_question(content: object) -> str:
+    question = " ".join(str(content).strip().split())
+    if not question:
+        raise BackendUnavailableError(
+            "LM Studio returned an empty follow-up. If this is a reasoning model, "
+            "increase the output token budget or disable reasoning in the model runtime."
+        )
+    if not question.endswith("?"):
+        question = f"{question}?"
+    return question
