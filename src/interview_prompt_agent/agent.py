@@ -35,6 +35,7 @@ class InterviewAgent:
         self.followup = make_followup(config)
 
     def run(self, *, max_turns: int = 3) -> Path:
+        self._validate_runtime()
         writer = SessionWriter.create(self.config.session_dir)
         question = self.config.initial_question
         transcript_so_far = ""
@@ -120,6 +121,16 @@ class InterviewAgent:
                 )
 
         return writer.root
+
+    def _validate_runtime(self) -> None:
+        validated: set[int] = set()
+        for backend in (self.stt, self.control_stt):
+            if backend is None or id(backend) in validated:
+                continue
+            validate = getattr(backend, "validate", None)
+            if callable(validate):
+                validate()
+            validated.add(id(backend))
 
     def _record_polling_turn(
         self,

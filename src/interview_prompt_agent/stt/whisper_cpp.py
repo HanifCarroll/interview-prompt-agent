@@ -6,7 +6,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from interview_prompt_agent.errors import DependencyMissingError
+from interview_prompt_agent.errors import BackendUnavailableError, DependencyMissingError
 from interview_prompt_agent.models import Transcript
 from interview_prompt_agent.stt.base import STTBackend
 
@@ -27,10 +27,19 @@ class WhisperCppBackend(STTBackend):
         self.language = language
         self.timeout_seconds = timeout_seconds
 
-    def transcribe_file(self, path: Path) -> Transcript:
+    def validate(self) -> str:
         binary = shutil.which(self.whisper_cli)
         if binary is None:
             raise DependencyMissingError(f"`{self.whisper_cli}` was not found in PATH")
+        if self.model is not None and not self.model.is_file():
+            raise BackendUnavailableError(
+                f"Whisper model not found: {self.model}. Pass a real ggml model path with "
+                "--whisper-model, or omit --whisper-model to use whisper.cpp defaults."
+            )
+        return binary
+
+    def transcribe_file(self, path: Path) -> Transcript:
+        binary = self.validate()
         cmd = [binary, "-f", str(path), "-l", self.language, "-nt", "--no-prints"]
         if self.model is not None:
             cmd.extend(["-m", str(self.model)])

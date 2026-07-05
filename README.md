@@ -130,6 +130,14 @@ uv run interview-agent doctor --json
 uv run --extra live interview-agent devices
 ```
 
+Before copying a `whisper.cpp` command, set `WHISPER_MODEL` to a real local ggml
+model file:
+
+```sh
+export WHISPER_MODEL="$HOME/.local/share/transcribe-audio/models/ggml-base.en.bin"
+test -f "$WHISPER_MODEL"
+```
+
 ## Voice Reference
 
 Chatterbox Turbo is a voice-cloning TTS model. A voice reference is a short WAV
@@ -160,7 +168,7 @@ Run with `whisper.cpp`, TEN VAD, Chatterbox Turbo, and LM Studio:
 uv run --extra live interview-agent run \
   --voice-reference ./voice-reference.wav \
   --input-device "MacBook Pro Microphone" \
-  --whisper-model /path/to/ggml-small.bin \
+  --whisper-model "$WHISPER_MODEL" \
   --initial-question "What idea should we turn into video raw material?"
 ```
 
@@ -172,7 +180,7 @@ Run with Kokoro instead of Chatterbox:
 uv run --extra live interview-agent run \
   --tts kokoro \
   --input-device "MacBook Pro Microphone" \
-  --whisper-model /path/to/ggml-small.bin \
+  --whisper-model "$WHISPER_MODEL" \
   --max-turns 2
 ```
 
@@ -187,7 +195,7 @@ uv run --extra live interview-agent run \
   --tts supertonic \
   --tts-num-threads 4 \
   --input-device "MacBook Pro Microphone" \
-  --whisper-model /path/to/ggml-small.bin \
+  --whisper-model "$WHISPER_MODEL" \
   --max-turns 2
 ```
 
@@ -198,7 +206,7 @@ uv run --extra live interview-agent run \
   --tts piper \
   --tts-num-threads 4 \
   --input-device "MacBook Pro Microphone" \
-  --whisper-model /path/to/ggml-small.bin \
+  --whisper-model "$WHISPER_MODEL" \
   --max-turns 2
 ```
 
@@ -206,11 +214,13 @@ For the fastest interactive path, use a small control model for detecting the
 explicit done phrase and a separate model for the full answer transcript:
 
 ```sh
+export WHISPER_CONTROL_MODEL="$HOME/.local/share/transcribe-audio/models/ggml-tiny.en.bin"
+
 uv run --extra live interview-agent run \
   --tts kokoro \
   --input-device "MacBook Pro Microphone" \
-  --whisper-control-model /path/to/ggml-tiny.en.bin \
-  --whisper-model /path/to/ggml-base.en.bin \
+  --whisper-control-model "$WHISPER_CONTROL_MODEL" \
+  --whisper-model "$WHISPER_MODEL" \
   --lmstudio-model qwen3-4b-instruct-2507 \
   --lmstudio-max-tokens 120 \
   --max-turns 2
@@ -256,7 +266,7 @@ uv run --extra live interview-agent run \
   --tts macos_say \
   --followup static \
   --input-device "MacBook Pro Microphone" \
-  --whisper-model /path/to/ggml-small.bin
+  --whisper-model "$WHISPER_MODEL"
 ```
 
 Use the sherpa-onnx STT adapter:
