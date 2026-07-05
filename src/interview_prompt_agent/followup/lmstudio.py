@@ -27,12 +27,7 @@ class LMStudioFollowupBackend(FollowupBackend):
         self.max_tokens = max_tokens
 
     def next_question(self, transcript_so_far: str) -> str:
-        prompt = (
-            "You are an interview prompt agent. Ask one concise follow-up question "
-            "that helps the speaker produce raw material for edited video. "
-            "Do not explain. Return only the question.\n\n"
-            f"Transcript so far:\n{transcript_so_far[-6000:]}"
-        )
+        prompt = _build_prompt(transcript_so_far)
         payload = {
             "model": self.model,
             "messages": [
@@ -62,6 +57,20 @@ class LMStudioFollowupBackend(FollowupBackend):
         except (KeyError, IndexError, TypeError) as exc:
             raise BackendUnavailableError(f"Unexpected LM Studio response: {data}") from exc
         return _clean_question(content)
+
+
+def _build_prompt(transcript_so_far: str) -> str:
+    return (
+        "You are an interview prompt agent. Ask one natural follow-up question "
+        "that helps the speaker produce raw material for edited video. "
+        "Use the previous questions and answers to avoid repeating yourself. "
+        "The final Answer block is the current answer. "
+        "Ask about a concrete detail from that final answer. "
+        "Do not ask about earlier topics unless the final answer asks you to. "
+        "Keep the question under 12 words. "
+        "Do not explain. Return only the question.\n\n"
+        f"Transcript so far:\n{transcript_so_far[-6000:]}"
+    )
 
 
 def _clean_question(content: object) -> str:

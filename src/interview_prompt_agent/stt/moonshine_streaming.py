@@ -49,6 +49,7 @@ class MoonshineStreamingBackend:
         self,
         *,
         output_path: Path,
+        interrupted_output_path: Path | None = None,
         done_phrases: tuple[str, ...],
         sample_rate: int,
         channels: int,
@@ -105,6 +106,7 @@ class MoonshineStreamingBackend:
         input_stream = None
         worker = threading.Thread(target=audio_worker, name="moonshine-audio-worker")
         started_at = time.perf_counter()
+        interrupted = False
         try:
             device = _resolve_input_device(sd, input_device)
             stream.start()
@@ -134,6 +136,9 @@ class MoonshineStreamingBackend:
             if self.print_transcripts and latest and latest != last_printed:
                 print(f"stream transcript: {latest}", flush=True)
             time.sleep(silence_after_done_ms / 1000)
+        except KeyboardInterrupt:
+            interrupted = True
+            raise
         finally:
             if input_stream is not None:
                 try:
@@ -148,6 +153,17 @@ class MoonshineStreamingBackend:
                 listener.ingest_transcript(final_transcript)
             finally:
                 stream.close()
+            if interrupted and interrupted_output_path is not None and frames:
+                write_pcm16_wav(
+                    interrupted_output_path,
+                    b"".join(frames),
+                    sample_rate=sample_rate,
+                    channels=channels,
+                )
+                print(
+                    f"\nInterrupted. Saved partial answer audio: {interrupted_output_path}",
+                    flush=True,
+                )
 
         if worker_error:
             raise BackendUnavailableError(f"Moonshine streaming failed: {worker_error[0]}")

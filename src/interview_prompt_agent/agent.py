@@ -69,6 +69,7 @@ class InterviewAgent:
                 recording_started_at = time.perf_counter()
                 result = self.streaming_stt.record_until_done(
                     output_path=answer_path,
+                    interrupted_output_path=writer.path(f"answer-{index:03d}.interrupted.wav"),
                     done_phrases=self.config.done_phrases,
                     sample_rate=self.config.sample_rate,
                     channels=1,
@@ -97,7 +98,12 @@ class InterviewAgent:
                 )
                 done_detected_at = time.perf_counter()
             print(f"final transcript: {final_text}", flush=True)
-            transcript_so_far = f"{transcript_so_far}\n\n{final_text}".strip()
+            transcript_so_far = _append_turn_context(
+                transcript_so_far,
+                index=index,
+                question=question,
+                answer=final_text,
+            )
             turn = PromptTurn(
                 index=index,
                 question=question,
@@ -187,3 +193,14 @@ class InterviewAgent:
         print("Transcribing full answer...", flush=True)
         final_text = self.stt.transcribe_file(answer_path).text
         return control_transcript, final_text, done_phrase
+
+
+def _append_turn_context(
+    transcript_so_far: str,
+    *,
+    index: int,
+    question: str,
+    answer: str,
+) -> str:
+    turn_text = f"Question {index}: {question}\nAnswer {index}: {answer}"
+    return f"{transcript_so_far}\n\n{turn_text}".strip()

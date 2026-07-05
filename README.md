@@ -225,24 +225,39 @@ uv run --extra live interview-agent run \
   --max-turns 2
 ```
 
-For the fastest interactive path, use a small control model for detecting the
-explicit done phrase and a separate model for the full answer transcript:
+For the best current local setup, use Piper for prompt audio and `base.en` for
+Whisper transcription:
+
+```sh
+uv run --extra live interview-agent run \
+  --tts piper \
+  --tts-num-threads 4 \
+  --input-device "MacBook Pro Microphone" \
+  --whisper-model "$WHISPER_MODEL" \
+  --lmstudio-model qwen3-4b-instruct-2507 \
+  --lmstudio-max-tokens 80 \
+  --max-turns 2
+```
+
+For faster done-phrase checks, you can add a smaller control model, but
+`tiny.en` is more likely to produce noisy control transcripts such as music or
+blank-audio hallucinations:
 
 ```sh
 export WHISPER_CONTROL_MODEL="$HOME/.local/share/transcribe-audio/models/ggml-tiny.en.bin"
 
 uv run --extra live interview-agent run \
-  --tts kokoro \
+  --tts piper \
+  --tts-num-threads 4 \
   --input-device "MacBook Pro Microphone" \
   --whisper-control-model "$WHISPER_CONTROL_MODEL" \
   --whisper-model "$WHISPER_MODEL" \
+  --poll-seconds 1 \
+  --tail-seconds 4 \
   --lmstudio-model qwen3-4b-instruct-2507 \
-  --lmstudio-max-tokens 120 \
+  --lmstudio-max-tokens 80 \
   --max-turns 2
 ```
-
-If `tiny.en` misses the done phrase in your room/noise setup, use `base.en` for
-both `--whisper-control-model` and `--whisper-model`.
 
 For lower turn-transition latency, use Moonshine streaming ASR. This keeps the
 ASR model loaded, streams microphone audio while you speak, and uses the live
@@ -253,19 +268,21 @@ separate full-answer Whisper transcription:
 uv run --extra live interview-agent run \
   --stt moonshine_streaming \
   --moonshine-model small_streaming \
-  --tts supertonic \
+  --tts piper \
+  --tts-num-threads 4 \
   --input-device "MacBook Pro Microphone" \
   --done-phrase next \
   --done-phrase "next slide" \
   --lmstudio-model qwen3-4b-instruct-2507 \
-  --lmstudio-max-tokens 120 \
+  --lmstudio-max-tokens 80 \
   --timings \
   --max-turns 2
 ```
 
 Add `--stream-transcripts` when you want to debug the evolving Moonshine text
 while you speak. Normal runs keep that output quiet and print only turn status
-plus timing lines.
+plus timing lines. If you interrupt a Moonshine turn, the partial turn audio is
+saved as `answer-NNN.interrupted.wav`.
 
 On Chatterbox startup you may see Hugging Face print `Fetching 10 files` even
 after the model has already been downloaded. If it says `Download complete:
@@ -274,11 +291,13 @@ remaining delay is model load plus speech synthesis. Generated Chatterbox audio
 is cached under `.cache/` so repeated identical questions can replay without
 loading the model again.
 
-For a lower-friction smoke test without Chatterbox:
+For a lower-friction diagnostic smoke test without LM Studio, use static
+follow-ups. Static mode rotates generic prompts; it is useful for measuring
+recording and playback latency, not for high-quality interview questions:
 
 ```sh
 uv run --extra live interview-agent run \
-  --tts macos_say \
+  --tts piper \
   --followup static \
   --input-device "MacBook Pro Microphone" \
   --whisper-model "$WHISPER_MODEL"
