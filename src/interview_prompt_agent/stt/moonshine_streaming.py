@@ -34,10 +34,12 @@ class MoonshineStreamingBackend:
         language: str = "en",
         model: str = "small_streaming",
         update_interval: float = 0.25,
+        print_transcripts: bool = False,
     ) -> None:
         self.language = language
         self.model = model
         self.update_interval = update_interval
+        self.print_transcripts = print_transcripts
         self._transcriber: Any | None = None
 
     def preload(self) -> None:
@@ -121,7 +123,7 @@ class MoonshineStreamingBackend:
                 if listener.error is not None:
                     raise BackendUnavailableError(f"Moonshine streaming failed: {listener.error}")
                 latest = listener.latest_transcript
-                if latest and latest != last_printed:
+                if self.print_transcripts and latest and latest != last_printed:
                     print(f"stream transcript: {latest}", flush=True)
                     last_printed = latest
 
@@ -129,7 +131,7 @@ class MoonshineStreamingBackend:
                 raise BackendUnavailableError(f"Moonshine streaming failed: {listener.error}")
             done_detected_at = time.perf_counter()
             latest = listener.latest_transcript
-            if latest and latest != last_printed:
+            if self.print_transcripts and latest and latest != last_printed:
                 print(f"stream transcript: {latest}", flush=True)
             time.sleep(silence_after_done_ms / 1000)
         finally:

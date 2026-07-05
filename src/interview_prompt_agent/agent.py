@@ -43,8 +43,15 @@ class InterviewAgent:
             preload()
         if self.streaming_stt is not None:
             self.streaming_stt.preload()
+        previous_done_detected_at: float | None = None
 
         for index in range(1, max_turns + 1):
+            if previous_done_detected_at is not None and self.config.timings:
+                print(
+                    f"timing turn {index}: transition_to_question_text="
+                    f"{time.perf_counter() - previous_done_detected_at:.2f}s",
+                    flush=True,
+                )
             print(f"\nQuestion {index}: {question}", flush=True)
             question_started_at = time.perf_counter()
             self.tts.speak(question)
@@ -67,6 +74,7 @@ class InterviewAgent:
                     input_device=self.config.input_device,
                     silence_after_done_ms=self.config.silence_after_done_ms,
                 )
+                done_detected_at = recording_started_at + result.done_detected_at
                 done_phrase = result.done_phrase
                 control_transcript = result.control_transcript
                 final_text = result.final_transcript
@@ -86,6 +94,7 @@ class InterviewAgent:
                     answer_path=answer_path,
                     writer=writer,
                 )
+                done_detected_at = time.perf_counter()
             print(f"final transcript: {final_text}", flush=True)
             transcript_so_far = f"{transcript_so_far}\n\n{final_text}".strip()
             turn = PromptTurn(
@@ -97,6 +106,9 @@ class InterviewAgent:
                 done_phrase=done_phrase,
             )
             writer.add_turn(turn)
+            previous_done_detected_at = done_detected_at
+            if index == max_turns:
+                continue
             print("Asking follow-up model for the next question...", flush=True)
             followup_started_at = time.perf_counter()
             question = self.followup.next_question(transcript_so_far)

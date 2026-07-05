@@ -32,6 +32,7 @@ class AgentConfig:
     lmstudio_model: str = "gemma-4-26b-a4b-it"
     lmstudio_max_tokens: int = 1024
     timings: bool = False
+    stream_transcripts: bool = False
 
 
 @dataclass(frozen=True)

@@ -32,6 +32,7 @@ def test_make_streaming_stt_returns_moonshine_backend() -> None:
             moonshine_language="en",
             moonshine_model="tiny_streaming",
             moonshine_update_interval=0.1,
+            stream_transcripts=True,
         )
     )
 
@@ -39,3 +40,4 @@ def test_make_streaming_stt_returns_moonshine_backend() -> None:
     assert backend.language == "en"
     assert backend.model == "tiny_streaming"
     assert backend.update_interval == 0.1
+    assert backend.print_transcripts is True

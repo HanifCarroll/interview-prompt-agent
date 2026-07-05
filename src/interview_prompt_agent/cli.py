@@ -110,6 +110,11 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--lmstudio-model", default="gemma-4-26b-a4b-it")
     run_parser.add_argument("--lmstudio-max-tokens", type=int, default=1024)
     run_parser.add_argument("--timings", action="store_true")
+    run_parser.add_argument(
+        "--stream-transcripts",
+        action="store_true",
+        help="Print evolving Moonshine transcripts while recording.",
+    )
 
     ref_parser = sub.add_parser("record-reference", help="Record a Chatterbox voice reference")
     ref_parser.add_argument("output", type=Path)
@@ -212,6 +217,7 @@ def run(args: argparse.Namespace) -> int:
         lmstudio_model=args.lmstudio_model,
         lmstudio_max_tokens=args.lmstudio_max_tokens,
         timings=args.timings,
+        stream_transcripts=args.stream_transcripts,
     )
     paths = RuntimePaths(
         whisper_cli=args.whisper_cli,

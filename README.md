@@ -211,6 +211,10 @@ uv run --extra live interview-agent run \
   --max-turns 2
 ```
 
+Add `--stream-transcripts` when you want to debug the evolving Moonshine text
+while you speak. Normal runs keep that output quiet and print only turn status
+plus timing lines.
+
 On Chatterbox startup you may see Hugging Face print `Fetching 10 files` even
 after the model has already been downloaded. If it says `Download complete:
 0.00B`, it is checking cached files, not downloading gigabytes again. The

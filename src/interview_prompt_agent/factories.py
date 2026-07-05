@@ -50,6 +50,7 @@ def make_streaming_stt(config: AgentConfig) -> MoonshineStreamingBackend | None:
             language=config.moonshine_language,
             model=config.moonshine_model,
             update_interval=config.moonshine_update_interval,
+            print_transcripts=config.stream_transcripts,
         )
     return None
 

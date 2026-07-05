@@ -6,6 +6,7 @@ import hashlib
 import shutil
 import subprocess
 import tempfile
+import time
 import urllib.request
 from pathlib import Path
 
@@ -46,11 +47,17 @@ class KokoroBackend(TTSBackend):
     def speak(self, text: str) -> None:
         cached_path = self._cache_path(text)
         if cached_path.exists():
+            print("Playing cached Kokoro audio...", flush=True)
             subprocess.run(["afplay", str(cached_path)], check=True)
             return
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
             path = Path(tmp.name)
+        started_at = time.perf_counter()
         self.synthesize(text, path)
+        print(
+            f"Kokoro audio ready in {time.perf_counter() - started_at:.2f}s. Playing...",
+            flush=True,
+        )
         cached_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(path, cached_path)
         subprocess.run(["afplay", str(path)], check=True)
