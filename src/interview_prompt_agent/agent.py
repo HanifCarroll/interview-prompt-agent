@@ -29,7 +29,7 @@ class InterviewAgent:
         transcript_so_far = ""
 
         for index in range(1, max_turns + 1):
-            print(f"\nQuestion {index}: {question}")
+            print(f"\nQuestion {index}: {question}", flush=True)
             self.tts.speak(question)
             answer_path = writer.path(f"answer-{index:03d}.wav")
             recorder = LiveRecorder(
@@ -37,7 +37,7 @@ class InterviewAgent:
                 device=self.config.input_device,
             )
             recorder.start()
-            print("Recording. Say 'next question' when this answer is done.")
+            print("Recording. Say 'next question' when this answer is done.", flush=True)
             control_transcript = ""
             done_phrase: str | None = None
 
@@ -52,12 +52,16 @@ class InterviewAgent:
                 if not self.vad.speech_segments(tail):
                     continue
                 control_transcript = self.stt.transcribe_file(tail).text
-                print(f"control transcript: {control_transcript}")
+                print(f"control transcript: {control_transcript}", flush=True)
                 done_phrase = phrase_at_end(control_transcript, self.config.done_phrases)
 
+            print(f"Detected done phrase: {done_phrase}. Stopping recording...", flush=True)
             time.sleep(self.config.silence_after_done_ms / 1000)
             recorder.stop(answer_path)
+            print(f"Saved answer audio: {answer_path}", flush=True)
+            print("Transcribing full answer...", flush=True)
             final_text = self.stt.transcribe_file(answer_path).text
+            print(f"final transcript: {final_text}", flush=True)
             transcript_so_far = f"{transcript_so_far}\n\n{final_text}".strip()
             turn = PromptTurn(
                 index=index,
@@ -68,6 +72,7 @@ class InterviewAgent:
                 done_phrase=done_phrase,
             )
             writer.add_turn(turn)
+            print("Asking Gemma for the next follow-up...", flush=True)
             question = self.followup.next_question(transcript_so_far)
 
         return writer.root

@@ -36,3 +36,25 @@ def test_resolve_input_device_by_unique_partial_name() -> None:
 def test_resolve_input_device_rejects_missing_name() -> None:
     with pytest.raises(BackendUnavailableError):
         _resolve_input_device(FakeSoundDevice(), "Studio Display")
+
+
+def test_live_recorder_stop_aborts_stream_before_close(tmp_path) -> None:
+    from interview_prompt_agent.audio.live import LiveRecorder
+
+    class FakeStream:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def abort(self) -> None:
+            self.calls.append("abort")
+
+        def close(self) -> None:
+            self.calls.append("close")
+
+    stream = FakeStream()
+    recorder = LiveRecorder()
+    recorder._stream = stream
+
+    recorder.stop(tmp_path / "answer.wav")
+
+    assert stream.calls == ["abort", "close"]

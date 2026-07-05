@@ -82,9 +82,12 @@ class LiveRecorder:
 
     def stop(self, path: Path) -> Path:
         if self._stream is not None:
-            self._stream.stop()
-            self._stream.close()
+            stream = self._stream
             self._stream = None
+            try:
+                stream.abort()
+            finally:
+                stream.close()
         self.drain()
         return write_pcm16_wav(
             path,

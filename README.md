@@ -138,6 +138,13 @@ uv run --extra live interview-agent run \
 
 Say `next question` when the answer is complete. Long pauses are allowed.
 
+On Chatterbox startup you may see Hugging Face print `Fetching 10 files` even
+after the model has already been downloaded. If it says `Download complete:
+0.00B`, it is checking cached files, not downloading gigabytes again. The
+remaining delay is model load plus speech synthesis. Generated Chatterbox audio
+is cached under `.cache/` so repeated identical questions can replay without
+loading the model again.
+
 For a lower-friction smoke test without Chatterbox:
 
 ```sh
