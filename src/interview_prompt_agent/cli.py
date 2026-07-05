@@ -112,8 +112,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument("--sherpa-num-threads", type=int, default=2)
     run_parser.add_argument("--lmstudio-url", default="http://localhost:1234/v1/chat/completions")
-    run_parser.add_argument("--lmstudio-model", default="gemma-4-26b-a4b-it")
-    run_parser.add_argument("--lmstudio-max-tokens", type=int, default=1024)
+    run_parser.add_argument("--lmstudio-model", default="qwen3-4b-instruct-2507")
+    run_parser.add_argument("--lmstudio-max-tokens", type=int, default=120)
+    run_parser.add_argument("--lmstudio-timeout-seconds", type=int, default=45)
     run_parser.add_argument("--timings", action="store_true")
     run_parser.add_argument(
         "--stream-transcripts",
@@ -143,8 +144,9 @@ def build_parser() -> argparse.ArgumentParser:
     follow_parser = sub.add_parser("ask-followup", help="Ask LM Studio for one follow-up")
     follow_parser.add_argument("transcript", type=Path)
     follow_parser.add_argument("--lmstudio-url", default="http://localhost:1234/v1/chat/completions")
-    follow_parser.add_argument("--lmstudio-model", default="gemma-4-26b-a4b-it")
-    follow_parser.add_argument("--lmstudio-max-tokens", type=int, default=1024)
+    follow_parser.add_argument("--lmstudio-model", default="qwen3-4b-instruct-2507")
+    follow_parser.add_argument("--lmstudio-max-tokens", type=int, default=120)
+    follow_parser.add_argument("--lmstudio-timeout-seconds", type=int, default=45)
 
     return parser
 
@@ -180,8 +182,8 @@ def doctor(args: argparse.Namespace) -> int:
     except ImportError:
         checks["perth-watermarker"] = "missing"
 
-    gemma_path = Path.home() / ".lmstudio/models/lmstudio-community/gemma-4-26B-A4B-it-GGUF"
-    checks["gemma-4-lmstudio"] = str(gemma_path) if gemma_path.exists() else "missing"
+    qwen_path = Path.home() / ".lmstudio/models/lmstudio-community/Qwen3-4B-Instruct-2507-GGUF"
+    checks["qwen3-4b-lmstudio"] = str(qwen_path) if qwen_path.exists() else "missing"
 
     if args.json:
         print(json.dumps(checks, indent=2))
@@ -226,6 +228,7 @@ def run(args: argparse.Namespace) -> int:
         lmstudio_url=args.lmstudio_url,
         lmstudio_model=args.lmstudio_model,
         lmstudio_max_tokens=args.lmstudio_max_tokens,
+        lmstudio_timeout_seconds=args.lmstudio_timeout_seconds,
         timings=args.timings,
         stream_transcripts=args.stream_transcripts,
     )
@@ -300,6 +303,7 @@ def ask_followup(args: argparse.Namespace) -> int:
         lmstudio_url=args.lmstudio_url,
         lmstudio_model=args.lmstudio_model,
         lmstudio_max_tokens=args.lmstudio_max_tokens,
+        lmstudio_timeout_seconds=args.lmstudio_timeout_seconds,
     )
     # Keep factory imports exercised by the public CLI surface.
     make_vad("ten")

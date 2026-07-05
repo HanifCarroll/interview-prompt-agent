@@ -199,6 +199,18 @@ uv run --extra live interview-agent run \
   --max-turns 2
 ```
 
+Supertonic includes multiple local speakers. If the default voice has bad
+inflection, try another speaker ID:
+
+```sh
+uv run --extra live interview-agent run \
+  --tts supertonic \
+  --tts-speaker-id 3 \
+  --input-device "MacBook Pro Microphone" \
+  --whisper-model "$WHISPER_MODEL" \
+  --max-turns 2
+```
+
 Run with Piper when the lowest prompt latency matters most:
 
 ```sh

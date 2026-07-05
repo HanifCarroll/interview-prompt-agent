@@ -85,6 +85,7 @@ def make_followup(config: AgentConfig) -> FollowupBackend:
             url=config.lmstudio_url,
             model=config.lmstudio_model,
             max_tokens=config.lmstudio_max_tokens,
+            timeout_seconds=config.lmstudio_timeout_seconds,
         )
     if config.followup == "static":
         return StaticFollowupBackend()

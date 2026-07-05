@@ -34,8 +34,9 @@ class AgentConfig:
     tts_speed: float = 1.0
     allow_tts_fallback: bool = False
     lmstudio_url: str = "http://localhost:1234/v1/chat/completions"
-    lmstudio_model: str = "gemma-4-26b-a4b-it"
-    lmstudio_max_tokens: int = 1024
+    lmstudio_model: str = "qwen3-4b-instruct-2507"
+    lmstudio_max_tokens: int = 120
+    lmstudio_timeout_seconds: int = 45
     timings: bool = False
     stream_transcripts: bool = False
 

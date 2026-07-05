@@ -54,7 +54,8 @@ class LMStudioFollowupBackend(FollowupBackend):
         except (urllib.error.URLError, TimeoutError) as exc:
             raise BackendUnavailableError(
                 "LM Studio local server is not reachable. Start LM Studio's local server "
-                f"and load the requested model, then retry. URL: {self.url}"
+                f"and load the requested model, then retry. URL: {self.url}; "
+                f"model: {self.model}; timeout: {self.timeout_seconds}s"
             ) from exc
         try:
             content = data["choices"][0]["message"]["content"]
