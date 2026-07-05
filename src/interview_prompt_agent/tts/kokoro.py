@@ -40,6 +40,9 @@ class KokoroBackend(TTSBackend):
         self.voices_path = voices_path
         self._model = None
 
+    def preload(self) -> None:
+        self._get_model()
+
     def speak(self, text: str) -> None:
         cached_path = self._cache_path(text)
         if cached_path.exists():
@@ -55,21 +58,30 @@ class KokoroBackend(TTSBackend):
     def synthesize(self, text: str, path: Path) -> Path:
         try:
             import numpy as np
-            from kokoro_onnx import Kokoro
         except ImportError as exc:
             raise DependencyMissingError(
                 "Kokoro TTS is not installed. Install with: uv pip install kokoro-onnx"
             ) from exc
 
-        model_path, voices_path = self._ensure_model_files()
-        if self._model is None:
-            print("Loading Kokoro TTS model...", flush=True)
-            self._model = Kokoro(str(model_path), str(voices_path))
-            print("Kokoro TTS model loaded.", flush=True)
-
+        self._get_model()
         print("Synthesizing speech with Kokoro...", flush=True)
         samples, sample_rate = self._model.create(text, voice=self.voice, speed=self.speed)
         return _write_float_audio(path, samples, sample_rate, np=np)
+
+    def _get_model(self):
+        if self._model is not None:
+            return self._model
+        try:
+            from kokoro_onnx import Kokoro
+        except ImportError as exc:
+            raise DependencyMissingError(
+                "Kokoro TTS is not installed. Install with: uv pip install kokoro-onnx"
+            ) from exc
+        model_path, voices_path = self._ensure_model_files()
+        print("Loading Kokoro TTS model...", flush=True)
+        self._model = Kokoro(str(model_path), str(voices_path))
+        print("Kokoro TTS model loaded.", flush=True)
+        return self._model
 
     def _ensure_model_files(self) -> tuple[Path, Path]:
         model_path = self.model_path or _default_model_path()

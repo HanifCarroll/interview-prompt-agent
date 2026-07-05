@@ -34,6 +34,9 @@ class InterviewAgent:
         writer = SessionWriter.create(self.config.session_dir)
         question = self.config.initial_question
         transcript_so_far = ""
+        preload = getattr(self.tts, "preload", None)
+        if callable(preload):
+            preload()
 
         for index in range(1, max_turns + 1):
             print(f"\nQuestion {index}: {question}", flush=True)
@@ -97,7 +100,7 @@ class InterviewAgent:
                 done_phrase=done_phrase,
             )
             writer.add_turn(turn)
-            print("Asking Gemma for the next follow-up...", flush=True)
+            print("Asking follow-up model for the next question...", flush=True)
             question = self.followup.next_question(transcript_so_far)
 
         return writer.root

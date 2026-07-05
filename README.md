@@ -144,7 +144,7 @@ do not commit it to the repo.
 
 ## Quick Start
 
-Run with `whisper.cpp`, TEN VAD, Chatterbox Turbo, and LM Studio/Gemma:
+Run with `whisper.cpp`, TEN VAD, Chatterbox Turbo, and LM Studio:
 
 ```sh
 uv run --extra live interview-agent run \
