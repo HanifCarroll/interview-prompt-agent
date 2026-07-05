@@ -11,6 +11,7 @@ from interview_prompt_agent.stt.sherpa_onnx import SherpaOnnxBackend
 from interview_prompt_agent.stt.whisper_cpp import WhisperCppBackend
 from interview_prompt_agent.tts.base import TTSBackend
 from interview_prompt_agent.tts.chatterbox_turbo import ChatterboxTurboBackend
+from interview_prompt_agent.tts.kokoro import KokoroBackend
 from interview_prompt_agent.tts.macos_say import MacOSSayBackend
 from interview_prompt_agent.vad.base import VADBackend
 from interview_prompt_agent.vad.ten import TenVADBackend
@@ -37,6 +38,8 @@ def make_stt(name: str, paths: RuntimePaths) -> STTBackend:
 def make_tts(config: AgentConfig) -> TTSBackend:
     if config.tts == "chatterbox_turbo":
         return ChatterboxTurboBackend(voice_reference=config.voice_reference)
+    if config.tts == "kokoro":
+        return KokoroBackend(voice=config.kokoro_voice)
     if config.tts == "macos_say":
         return MacOSSayBackend()
     raise ValueError(f"Unknown TTS backend: {config.tts}")

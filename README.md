@@ -72,6 +72,12 @@ uv pip install "setuptools<81" chatterbox-tts
 `setuptools<81` is needed because Chatterbox's Perth watermark dependency still
 imports `pkg_resources`.
 
+Install Kokoro TTS:
+
+```sh
+uv pip install kokoro-onnx
+```
+
 Install sherpa-onnx support:
 
 ```sh
@@ -137,6 +143,19 @@ uv run --extra live interview-agent run \
 ```
 
 Say `next question` when the answer is complete. Long pauses are allowed.
+
+Run with Kokoro instead of Chatterbox:
+
+```sh
+uv run --extra live interview-agent run \
+  --tts kokoro \
+  --input-device "MacBook Pro Microphone" \
+  --whisper-model /path/to/ggml-small.bin \
+  --max-turns 2
+```
+
+Kokoro downloads the int8 ONNX model and voices file on first use, then reuses
+them from `.cache/`.
 
 On Chatterbox startup you may see Hugging Face print `Fetching 10 files` even
 after the model has already been downloaded. If it says `Download complete:

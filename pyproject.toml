@@ -24,7 +24,7 @@ dev = [
   "ruff>=0.8",
 ]
 live = [
-  "numpy>=1.26,<2.0",
+  "numpy>=2.0.2",
   "sounddevice>=0.4.6",
 ]
 

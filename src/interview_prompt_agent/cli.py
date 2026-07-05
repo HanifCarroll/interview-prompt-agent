@@ -58,9 +58,10 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--stt", choices=["whisper_cpp", "sherpa_onnx"], default="whisper_cpp")
     run_parser.add_argument(
         "--tts",
-        choices=["chatterbox_turbo", "macos_say"],
+        choices=["chatterbox_turbo", "kokoro", "macos_say"],
         default="chatterbox_turbo",
     )
+    run_parser.add_argument("--kokoro-voice", default="af_heart")
     run_parser.add_argument("--followup", choices=["lmstudio", "static"], default="lmstudio")
     run_parser.add_argument("--whisper-cli", default="whisper-cli")
     run_parser.add_argument("--whisper-model", type=Path)
@@ -111,6 +112,7 @@ def doctor(args: argparse.Namespace) -> int:
         ("sounddevice", "sounddevice"),
         ("ten_vad", "ten_vad"),
         ("chatterbox", "chatterbox"),
+        ("kokoro_onnx", "kokoro_onnx"),
         ("sherpa_onnx", "sherpa_onnx"),
     ):
         if importlib.util.find_spec(package):
@@ -160,6 +162,7 @@ def run(args: argparse.Namespace) -> int:
         session_dir=args.session_dir,
         initial_question=args.initial_question,
         voice_reference=args.voice_reference,
+        kokoro_voice=args.kokoro_voice,
         input_device=_coerce_device(args.input_device),
         lmstudio_url=args.lmstudio_url,
         lmstudio_model=args.lmstudio_model,
