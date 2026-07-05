@@ -71,10 +71,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument(
         "--tts",
-        choices=["chatterbox_turbo", "kokoro", "macos_say"],
+        choices=["chatterbox_turbo", "kokoro", "macos_say", "piper", "supertonic"],
         default="chatterbox_turbo",
     )
     run_parser.add_argument("--kokoro-voice", default="af_heart")
+    run_parser.add_argument("--piper-model-dir", type=Path)
+    run_parser.add_argument("--supertonic-model-dir", type=Path)
+    run_parser.add_argument("--tts-num-threads", type=int, default=4)
+    run_parser.add_argument("--tts-speaker-id", type=int, default=0)
+    run_parser.add_argument("--tts-speed", type=float, default=1.0)
     run_parser.add_argument("--followup", choices=["lmstudio", "static"], default="lmstudio")
     run_parser.add_argument("--whisper-cli", default="whisper-cli")
     run_parser.add_argument("--whisper-model", type=Path)
@@ -210,6 +215,11 @@ def run(args: argparse.Namespace) -> int:
         moonshine_model=args.moonshine_model,
         moonshine_update_interval=args.moonshine_update_interval,
         kokoro_voice=args.kokoro_voice,
+        piper_model_dir=args.piper_model_dir,
+        supertonic_model_dir=args.supertonic_model_dir,
+        tts_num_threads=args.tts_num_threads,
+        tts_speaker_id=args.tts_speaker_id,
+        tts_speed=args.tts_speed,
         input_device=_coerce_device(args.input_device),
         poll_seconds=args.poll_seconds,
         tail_seconds=args.tail_seconds,

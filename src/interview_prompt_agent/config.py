@@ -27,6 +27,11 @@ class AgentConfig:
     moonshine_model: str = "small_streaming"
     moonshine_update_interval: float = 0.25
     kokoro_voice: str = "af_heart"
+    piper_model_dir: Path | None = None
+    supertonic_model_dir: Path | None = None
+    tts_num_threads: int = 4
+    tts_speaker_id: int = 0
+    tts_speed: float = 1.0
     allow_tts_fallback: bool = False
     lmstudio_url: str = "http://localhost:1234/v1/chat/completions"
     lmstudio_model: str = "gemma-4-26b-a4b-it"

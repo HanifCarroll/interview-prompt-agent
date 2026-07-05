@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from interview_prompt_agent.config import AgentConfig, RuntimePaths
-from interview_prompt_agent.factories import make_control_stt, make_streaming_stt
+from interview_prompt_agent.factories import make_control_stt, make_streaming_stt, make_tts
+from interview_prompt_agent.tts.sherpa import PiperBackend, SupertonicBackend
 
 
 def test_make_control_stt_prefers_control_whisper_model() -> None:
@@ -41,3 +42,37 @@ def test_make_streaming_stt_returns_moonshine_backend() -> None:
     assert backend.model == "tiny_streaming"
     assert backend.update_interval == 0.1
     assert backend.print_transcripts is True
+
+
+def test_make_tts_returns_piper_backend() -> None:
+    backend = make_tts(
+        AgentConfig(
+            tts="piper",
+            tts_num_threads=6,
+            tts_speed=1.2,
+            piper_model_dir=Path("models/piper"),
+        )
+    )
+
+    assert isinstance(backend, PiperBackend)
+    assert backend.num_threads == 6
+    assert backend.speed == 1.2
+    assert backend.model_dir == Path("models/piper")
+
+
+def test_make_tts_returns_supertonic_backend() -> None:
+    backend = make_tts(
+        AgentConfig(
+            tts="supertonic",
+            tts_num_threads=6,
+            tts_speaker_id=3,
+            tts_speed=1.2,
+            supertonic_model_dir=Path("models/supertonic"),
+        )
+    )
+
+    assert isinstance(backend, SupertonicBackend)
+    assert backend.num_threads == 6
+    assert backend.speaker_id == 3
+    assert backend.speed == 1.2
+    assert backend.model_dir == Path("models/supertonic")

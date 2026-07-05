@@ -16,7 +16,7 @@ on local model/runtime setup:
 
 - TEN VAD for speech activity detection.
 - Moonshine streaming ASR, `whisper.cpp`, or `sherpa-onnx` for speech-to-text.
-- Kokoro or Chatterbox Turbo for local text-to-speech.
+- Supertonic, Piper, Kokoro, or Chatterbox Turbo for local text-to-speech.
 - LM Studio with a local chat model for follow-up questions.
 
 ## How It Works
@@ -83,6 +83,10 @@ Install sherpa-onnx support:
 ```sh
 uv pip install sherpa-onnx
 ```
+
+This enables both sherpa STT and the fast local Piper/Supertonic TTS backends.
+The default Piper and Supertonic model files download on first use and are
+reused from `.cache/interview-prompt-agent/sherpa-tts/`.
 
 Install Moonshine streaming ASR support:
 
@@ -175,6 +179,29 @@ uv run --extra live interview-agent run \
 Kokoro downloads the int8 ONNX model and voices file on first use, then reuses
 them from `.cache/`.
 
+Run with Supertonic for a faster local voice that still sounds more natural than
+the smallest system voices:
+
+```sh
+uv run --extra live interview-agent run \
+  --tts supertonic \
+  --tts-num-threads 4 \
+  --input-device "MacBook Pro Microphone" \
+  --whisper-model /path/to/ggml-small.bin \
+  --max-turns 2
+```
+
+Run with Piper when the lowest prompt latency matters most:
+
+```sh
+uv run --extra live interview-agent run \
+  --tts piper \
+  --tts-num-threads 4 \
+  --input-device "MacBook Pro Microphone" \
+  --whisper-model /path/to/ggml-small.bin \
+  --max-turns 2
+```
+
 For the fastest interactive path, use a small control model for detecting the
 explicit done phrase and a separate model for the full answer transcript:
 
@@ -201,7 +228,7 @@ separate full-answer Whisper transcription:
 uv run --extra live interview-agent run \
   --stt moonshine_streaming \
   --moonshine-model small_streaming \
-  --tts kokoro \
+  --tts supertonic \
   --input-device "MacBook Pro Microphone" \
   --done-phrase next \
   --done-phrase "next slide" \
@@ -247,6 +274,16 @@ The sherpa adapter supports common offline sherpa layouts: transducer
 `encoder`/`decoder`/`joiner`, sherpa Whisper `encoder`/`decoder`, Paraformer,
 NeMo CTC, and WeNet CTC. Use `--sherpa-model-kind` when `auto` cannot infer the
 layout from filenames.
+
+Use local model directories for Piper or Supertonic when you do not want the
+defaults downloaded into `.cache/`:
+
+```sh
+uv run --extra live interview-agent run \
+  --tts supertonic \
+  --supertonic-model-dir /path/to/sherpa-onnx-supertonic-tts-int8 \
+  --followup static
+```
 
 ## Commands
 

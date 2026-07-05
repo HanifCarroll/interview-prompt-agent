@@ -14,6 +14,7 @@ from interview_prompt_agent.tts.base import TTSBackend
 from interview_prompt_agent.tts.chatterbox_turbo import ChatterboxTurboBackend
 from interview_prompt_agent.tts.kokoro import KokoroBackend
 from interview_prompt_agent.tts.macos_say import MacOSSayBackend
+from interview_prompt_agent.tts.sherpa import PiperBackend, SupertonicBackend
 from interview_prompt_agent.vad.base import VADBackend
 from interview_prompt_agent.vad.ten import TenVADBackend
 
@@ -59,7 +60,20 @@ def make_tts(config: AgentConfig) -> TTSBackend:
     if config.tts == "chatterbox_turbo":
         return ChatterboxTurboBackend(voice_reference=config.voice_reference)
     if config.tts == "kokoro":
-        return KokoroBackend(voice=config.kokoro_voice)
+        return KokoroBackend(voice=config.kokoro_voice, speed=config.tts_speed)
+    if config.tts == "piper":
+        return PiperBackend(
+            model_dir=config.piper_model_dir,
+            num_threads=config.tts_num_threads,
+            speed=config.tts_speed,
+        )
+    if config.tts == "supertonic":
+        return SupertonicBackend(
+            model_dir=config.supertonic_model_dir,
+            num_threads=config.tts_num_threads,
+            speaker_id=config.tts_speaker_id,
+            speed=config.tts_speed,
+        )
     if config.tts == "macos_say":
         return MacOSSayBackend()
     raise ValueError(f"Unknown TTS backend: {config.tts}")

@@ -23,6 +23,16 @@ def test_run_help_includes_done_phrase() -> None:
     assert "--done-phrase" in subparsers["run"].format_help()
 
 
+def test_run_tts_choices_include_fast_sherpa_backends() -> None:
+    subparsers = next(
+        action for action in build_parser()._actions if action.dest == "command"
+    ).choices
+    tts_action = next(action for action in subparsers["run"]._actions if action.dest == "tts")
+
+    assert "piper" in tts_action.choices
+    assert "supertonic" in tts_action.choices
+
+
 def test_keyboard_interrupt_exits_cleanly(monkeypatch, capsys) -> None:
     def raise_interrupt(args) -> int:
         raise KeyboardInterrupt
