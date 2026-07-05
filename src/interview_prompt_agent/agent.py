@@ -8,7 +8,13 @@ from pathlib import Path
 from interview_prompt_agent.audio.live import LiveRecorder
 from interview_prompt_agent.audio.wav import read_tail
 from interview_prompt_agent.config import AgentConfig, RuntimePaths
-from interview_prompt_agent.factories import make_followup, make_stt, make_tts, make_vad
+from interview_prompt_agent.factories import (
+    make_control_stt,
+    make_followup,
+    make_stt,
+    make_tts,
+    make_vad,
+)
 from interview_prompt_agent.models import PromptTurn
 from interview_prompt_agent.session.writer import SessionWriter
 from interview_prompt_agent.text import phrase_at_end
@@ -20,6 +26,7 @@ class InterviewAgent:
         self.paths = paths
         self.vad = make_vad(config.vad)
         self.stt = make_stt(config.stt, paths)
+        self.control_stt = make_control_stt(config.stt, paths)
         self.tts = make_tts(config)
         self.followup = make_followup(config)
 
@@ -36,28 +43,46 @@ class InterviewAgent:
                 sample_rate=self.config.sample_rate,
                 device=self.config.input_device,
             )
-            recorder.start()
-            print("Recording. Say 'next question' when this answer is done.", flush=True)
             control_transcript = ""
             done_phrase: str | None = None
+            recording_active = False
 
-            while done_phrase is None:
-                time.sleep(self.config.poll_seconds)
-                snapshot = recorder.snapshot(writer.path(f"answer-{index:03d}.partial.wav"))
-                tail = read_tail(
-                    snapshot,
-                    seconds=self.config.tail_seconds,
-                    output_path=writer.path(f"answer-{index:03d}.tail.wav"),
-                )
-                if not self.vad.speech_segments(tail):
-                    continue
-                control_transcript = self.stt.transcribe_file(tail).text
-                print(f"control transcript: {control_transcript}", flush=True)
-                done_phrase = phrase_at_end(control_transcript, self.config.done_phrases)
+            try:
+                recorder.start()
+                recording_active = True
+                print("Recording. Say 'next question' when this answer is done.", flush=True)
 
-            print(f"Detected done phrase: {done_phrase}. Stopping recording...", flush=True)
-            time.sleep(self.config.silence_after_done_ms / 1000)
-            recorder.stop(answer_path)
+                while done_phrase is None:
+                    time.sleep(self.config.poll_seconds)
+                    snapshot = recorder.snapshot(writer.path(f"answer-{index:03d}.partial.wav"))
+                    tail = read_tail(
+                        snapshot,
+                        seconds=self.config.tail_seconds,
+                        output_path=writer.path(f"answer-{index:03d}.tail.wav"),
+                    )
+                    if not self.vad.speech_segments(tail):
+                        continue
+                    control_transcript = self.control_stt.transcribe_file(tail).text
+                    print(f"control transcript: {control_transcript}", flush=True)
+                    done_phrase = phrase_at_end(control_transcript, self.config.done_phrases)
+
+                print(f"Detected done phrase: {done_phrase}. Stopping recording...", flush=True)
+                time.sleep(self.config.silence_after_done_ms / 1000)
+                recorder.stop(answer_path)
+                recording_active = False
+            except KeyboardInterrupt:
+                if recording_active:
+                    interrupted_path = writer.path(f"answer-{index:03d}.interrupted.wav")
+                    try:
+                        recorder.stop(interrupted_path)
+                        print(
+                            f"\nInterrupted. Saved partial answer audio: {interrupted_path}",
+                            flush=True,
+                        )
+                    except Exception as exc:  # pragma: no cover - defensive cleanup path
+                        print(f"\nInterrupted. Could not save partial audio: {exc}", flush=True)
+                raise
+
             print(f"Saved answer audio: {answer_path}", flush=True)
             print("Transcribing full answer...", flush=True)
             final_text = self.stt.transcribe_file(answer_path).text

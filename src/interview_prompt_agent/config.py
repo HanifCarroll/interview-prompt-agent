@@ -27,12 +27,14 @@ class AgentConfig:
     allow_tts_fallback: bool = False
     lmstudio_url: str = "http://localhost:1234/v1/chat/completions"
     lmstudio_model: str = "gemma-4-26b-a4b-it"
+    lmstudio_max_tokens: int = 1024
 
 
 @dataclass(frozen=True)
 class RuntimePaths:
     whisper_cli: str = "whisper-cli"
     whisper_model: Path | None = None
+    whisper_control_model: Path | None = None
     sherpa_model_dir: Path | None = None
     sherpa_model_kind: str = "auto"
     sherpa_num_threads: int = 2

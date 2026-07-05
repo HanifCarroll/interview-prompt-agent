@@ -16,13 +16,13 @@ on local model/runtime setup:
 
 - TEN VAD for speech activity detection.
 - `whisper.cpp` or `sherpa-onnx` for speech-to-text.
-- Chatterbox Turbo for local text-to-speech.
-- LM Studio with Gemma 4 for follow-up questions.
+- Kokoro or Chatterbox Turbo for local text-to-speech.
+- LM Studio with a local chat model for follow-up questions.
 
 ## How It Works
 
 ```text
-question -> Chatterbox Turbo TTS -> microphone recording
+question -> local TTS -> microphone recording
                                       |
                                       v
                          TEN VAD checks recent speech windows
@@ -34,7 +34,7 @@ question -> Chatterbox Turbo TTS -> microphone recording
                      "next question" at the end stops the turn
                                       |
                                       v
-                 full answer is transcribed and sent to Gemma
+                 full answer is transcribed and sent to LM Studio
                                       |
                                       v
                          next follow-up question is spoken
@@ -84,6 +84,17 @@ Install sherpa-onnx support:
 uv pip install sherpa-onnx
 ```
 
+Install and load a faster LM Studio follow-up model:
+
+```sh
+lms get qwen/qwen3-4b-2507 --gguf -y
+lms load qwen/qwen3-4b-2507 \
+  --identifier qwen3-4b-instruct-2507 \
+  --gpu max \
+  --context-length 4096 \
+  -y
+```
+
 ## Local Requirements
 
 Required for the default path:
@@ -92,13 +103,14 @@ Required for the default path:
 - `whisper-cli` from `whisper.cpp`.
 - A Whisper model path, or a `whisper-cli` default model.
 - LM Studio running a local OpenAI-compatible server.
-- Gemma 4 loaded in LM Studio.
+- A local chat model loaded in LM Studio.
 - A short voice reference WAV for Chatterbox Turbo. It does not need to be your
   voice.
 
-Gemma 4 may spend part of the generation budget on reasoning before returning
+Reasoning-heavy models may spend part of the generation budget before returning
 the final question, so the default follow-up budget is intentionally larger
-than a short answer appears to need.
+than a short answer appears to need. For faster follow-ups, use a smaller
+non-thinking model and set `--lmstudio-max-tokens` lower.
 
 Check the environment:
 
@@ -157,6 +169,23 @@ uv run --extra live interview-agent run \
 Kokoro downloads the int8 ONNX model and voices file on first use, then reuses
 them from `.cache/`.
 
+For the fastest interactive path, use a small control model for detecting the
+explicit done phrase and a separate model for the full answer transcript:
+
+```sh
+uv run --extra live interview-agent run \
+  --tts kokoro \
+  --input-device "MacBook Pro Microphone" \
+  --whisper-control-model /path/to/ggml-tiny.en.bin \
+  --whisper-model /path/to/ggml-base.en.bin \
+  --lmstudio-model qwen3-4b-instruct-2507 \
+  --lmstudio-max-tokens 120 \
+  --max-turns 2
+```
+
+If `tiny.en` misses the done phrase in your room/noise setup, use `base.en` for
+both `--whisper-control-model` and `--whisper-model`.
+
 On Chatterbox startup you may see Hugging Face print `Fetching 10 files` even
 after the model has already been downloaded. If it says `Download complete:
 0.00B`, it is checking cached files, not downloading gigabytes again. The
@@ -199,7 +228,7 @@ layout from filenames.
 | `interview-agent record-reference OUT.wav` | Record a Chatterbox Turbo voice reference |
 | `interview-agent make-reference OUT.wav` | Generate a neutral local voice reference with macOS `say` |
 | `interview-agent run` | Start a live microphone interview session |
-| `interview-agent ask-followup transcript.txt` | Ask LM Studio/Gemma for one follow-up |
+| `interview-agent ask-followup transcript.txt` | Ask LM Studio for one follow-up |
 
 ## Outputs
 

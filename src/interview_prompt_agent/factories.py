@@ -23,9 +23,13 @@ def make_vad(name: str) -> VADBackend:
     raise ValueError(f"Unknown VAD backend: {name}")
 
 
-def make_stt(name: str, paths: RuntimePaths) -> STTBackend:
+def make_stt(name: str, paths: RuntimePaths, *, control: bool = False) -> STTBackend:
     if name == "whisper_cpp":
-        return WhisperCppBackend(whisper_cli=paths.whisper_cli, model=paths.whisper_model)
+        model = paths.whisper_control_model if control else paths.whisper_model
+        return WhisperCppBackend(
+            whisper_cli=paths.whisper_cli,
+            model=model or paths.whisper_model,
+        )
     if name == "sherpa_onnx":
         return SherpaOnnxBackend(
             model_dir=paths.sherpa_model_dir,
@@ -33,6 +37,10 @@ def make_stt(name: str, paths: RuntimePaths) -> STTBackend:
             num_threads=paths.sherpa_num_threads,
         )
     raise ValueError(f"Unknown STT backend: {name}")
+
+
+def make_control_stt(name: str, paths: RuntimePaths) -> STTBackend:
+    return make_stt(name, paths, control=True)
 
 
 def make_tts(config: AgentConfig) -> TTSBackend:
@@ -47,7 +55,11 @@ def make_tts(config: AgentConfig) -> TTSBackend:
 
 def make_followup(config: AgentConfig) -> FollowupBackend:
     if config.followup == "lmstudio":
-        return LMStudioFollowupBackend(url=config.lmstudio_url, model=config.lmstudio_model)
+        return LMStudioFollowupBackend(
+            url=config.lmstudio_url,
+            model=config.lmstudio_model,
+            max_tokens=config.lmstudio_max_tokens,
+        )
     if config.followup == "static":
         return StaticFollowupBackend()
     raise ValueError(f"Unknown follow-up backend: {config.followup}")

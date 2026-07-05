@@ -33,6 +33,9 @@ def main(argv: list[str] | None = None) -> int:
             return make_reference(args)
         if args.command == "ask-followup":
             return ask_followup(args)
+    except KeyboardInterrupt:
+        print("\nInterrupted. Exiting cleanly.")
+        return 130
     except AgentError as exc:
         print(f"error: {exc}")
         return 2
@@ -65,6 +68,13 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--followup", choices=["lmstudio", "static"], default="lmstudio")
     run_parser.add_argument("--whisper-cli", default="whisper-cli")
     run_parser.add_argument("--whisper-model", type=Path)
+    run_parser.add_argument(
+        "--whisper-control-model",
+        type=Path,
+        help="Optional smaller whisper.cpp model for done-phrase checks",
+    )
+    run_parser.add_argument("--poll-seconds", type=float, default=2.0)
+    run_parser.add_argument("--tail-seconds", type=float, default=8.0)
     run_parser.add_argument("--sherpa-model-dir", type=Path)
     run_parser.add_argument(
         "--sherpa-model-kind",
@@ -74,6 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--sherpa-num-threads", type=int, default=2)
     run_parser.add_argument("--lmstudio-url", default="http://localhost:1234/v1/chat/completions")
     run_parser.add_argument("--lmstudio-model", default="gemma-4-26b-a4b-it")
+    run_parser.add_argument("--lmstudio-max-tokens", type=int, default=1024)
 
     ref_parser = sub.add_parser("record-reference", help="Record a Chatterbox voice reference")
     ref_parser.add_argument("output", type=Path)
@@ -94,10 +105,11 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
-    follow_parser = sub.add_parser("ask-followup", help="Ask local Gemma for one follow-up")
+    follow_parser = sub.add_parser("ask-followup", help="Ask LM Studio for one follow-up")
     follow_parser.add_argument("transcript", type=Path)
     follow_parser.add_argument("--lmstudio-url", default="http://localhost:1234/v1/chat/completions")
     follow_parser.add_argument("--lmstudio-model", default="gemma-4-26b-a4b-it")
+    follow_parser.add_argument("--lmstudio-max-tokens", type=int, default=1024)
 
     return parser
 
@@ -164,12 +176,16 @@ def run(args: argparse.Namespace) -> int:
         voice_reference=args.voice_reference,
         kokoro_voice=args.kokoro_voice,
         input_device=_coerce_device(args.input_device),
+        poll_seconds=args.poll_seconds,
+        tail_seconds=args.tail_seconds,
         lmstudio_url=args.lmstudio_url,
         lmstudio_model=args.lmstudio_model,
+        lmstudio_max_tokens=args.lmstudio_max_tokens,
     )
     paths = RuntimePaths(
         whisper_cli=args.whisper_cli,
         whisper_model=args.whisper_model,
+        whisper_control_model=args.whisper_control_model,
         sherpa_model_dir=args.sherpa_model_dir,
         sherpa_model_kind=args.sherpa_model_kind,
         sherpa_num_threads=args.sherpa_num_threads,
@@ -236,6 +252,7 @@ def ask_followup(args: argparse.Namespace) -> int:
         followup="lmstudio",
         lmstudio_url=args.lmstudio_url,
         lmstudio_model=args.lmstudio_model,
+        lmstudio_max_tokens=args.lmstudio_max_tokens,
     )
     # Keep factory imports exercised by the public CLI surface.
     make_vad("ten")

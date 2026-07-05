@@ -13,10 +13,18 @@ from interview_prompt_agent.followup.base import FollowupBackend
 class LMStudioFollowupBackend(FollowupBackend):
     name = "lmstudio"
 
-    def __init__(self, *, url: str, model: str, timeout_seconds: int = 120) -> None:
+    def __init__(
+        self,
+        *,
+        url: str,
+        model: str,
+        timeout_seconds: int = 120,
+        max_tokens: int = 1024,
+    ) -> None:
         self.url = url
         self.model = model
         self.timeout_seconds = timeout_seconds
+        self.max_tokens = max_tokens
 
     def next_question(self, transcript_so_far: str) -> str:
         prompt = (
@@ -32,7 +40,7 @@ class LMStudioFollowupBackend(FollowupBackend):
                 {"role": "user", "content": prompt},
             ],
             "temperature": 0.4,
-            "max_tokens": 1024,
+            "max_tokens": self.max_tokens,
         }
         request = urllib.request.Request(
             self.url,
@@ -46,7 +54,7 @@ class LMStudioFollowupBackend(FollowupBackend):
         except (urllib.error.URLError, TimeoutError) as exc:
             raise BackendUnavailableError(
                 "LM Studio local server is not reachable. Start LM Studio's local server "
-                f"and load the Gemma model, then retry. URL: {self.url}"
+                f"and load the requested model, then retry. URL: {self.url}"
             ) from exc
         try:
             content = data["choices"][0]["message"]["content"]
