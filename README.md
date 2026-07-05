@@ -173,6 +173,7 @@ uv run --extra live interview-agent run \
 ```
 
 Say `next question` when the answer is complete. Long pauses are allowed.
+All follow-up questions come from the configured LM Studio model.
 
 Run with Kokoro instead of Chatterbox:
 
@@ -291,18 +292,6 @@ remaining delay is model load plus speech synthesis. Generated Chatterbox audio
 is cached under `.cache/` so repeated identical questions can replay without
 loading the model again.
 
-For a lower-friction diagnostic smoke test without LM Studio, use static
-follow-ups. Static mode rotates generic prompts; it is useful for measuring
-recording and playback latency, not for high-quality interview questions:
-
-```sh
-uv run --extra live interview-agent run \
-  --tts piper \
-  --followup static \
-  --input-device "MacBook Pro Microphone" \
-  --whisper-model "$WHISPER_MODEL"
-```
-
 Use the sherpa-onnx STT adapter:
 
 ```sh
@@ -310,8 +299,7 @@ uv run --extra live interview-agent run \
   --stt sherpa_onnx \
   --sherpa-model-dir /path/to/sherpa/model \
   --sherpa-model-kind auto \
-  --tts macos_say \
-  --followup static
+  --tts macos_say
 ```
 
 The sherpa adapter supports common offline sherpa layouts: transducer
@@ -325,8 +313,7 @@ defaults downloaded into `.cache/`:
 ```sh
 uv run --extra live interview-agent run \
   --tts supertonic \
-  --supertonic-model-dir /path/to/sherpa-onnx-supertonic-tts-int8 \
-  --followup static
+  --supertonic-model-dir /path/to/sherpa-onnx-supertonic-tts-int8
 ```
 
 ## Commands

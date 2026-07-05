@@ -80,7 +80,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--tts-num-threads", type=int, default=4)
     run_parser.add_argument("--tts-speaker-id", type=int, default=0)
     run_parser.add_argument("--tts-speed", type=float, default=1.0)
-    run_parser.add_argument("--followup", choices=["lmstudio", "static"], default="lmstudio")
+    run_parser.add_argument("--followup", choices=["lmstudio"], default="lmstudio")
     run_parser.add_argument("--whisper-cli", default="whisper-cli")
     run_parser.add_argument("--whisper-model", type=Path)
     run_parser.add_argument(

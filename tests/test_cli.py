@@ -33,6 +33,17 @@ def test_run_tts_choices_include_fast_sherpa_backends() -> None:
     assert "supertonic" in tts_action.choices
 
 
+def test_run_followup_choices_only_include_lmstudio() -> None:
+    subparsers = next(
+        action for action in build_parser()._actions if action.dest == "command"
+    ).choices
+    followup_action = next(
+        action for action in subparsers["run"]._actions if action.dest == "followup"
+    )
+
+    assert followup_action.choices == ["lmstudio"]
+
+
 def test_keyboard_interrupt_exits_cleanly(monkeypatch, capsys) -> None:
     def raise_interrupt(args) -> int:
         raise KeyboardInterrupt

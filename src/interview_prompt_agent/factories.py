@@ -5,7 +5,6 @@ from __future__ import annotations
 from interview_prompt_agent.config import AgentConfig, RuntimePaths
 from interview_prompt_agent.followup.base import FollowupBackend
 from interview_prompt_agent.followup.lmstudio import LMStudioFollowupBackend
-from interview_prompt_agent.followup.static import StaticFollowupBackend
 from interview_prompt_agent.stt.base import STTBackend
 from interview_prompt_agent.stt.moonshine_streaming import MoonshineStreamingBackend
 from interview_prompt_agent.stt.sherpa_onnx import SherpaOnnxBackend
@@ -87,6 +86,4 @@ def make_followup(config: AgentConfig) -> FollowupBackend:
             max_tokens=config.lmstudio_max_tokens,
             timeout_seconds=config.lmstudio_timeout_seconds,
         )
-    if config.followup == "static":
-        return StaticFollowupBackend()
     raise ValueError(f"Unknown follow-up backend: {config.followup}")
