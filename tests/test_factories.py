@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from interview_prompt_agent.config import RuntimePaths
-from interview_prompt_agent.factories import make_control_stt
+from interview_prompt_agent.config import AgentConfig, RuntimePaths
+from interview_prompt_agent.factories import make_control_stt, make_streaming_stt
 
 
 def test_make_control_stt_prefers_control_whisper_model() -> None:
@@ -23,3 +23,19 @@ def test_make_control_stt_falls_back_to_main_whisper_model() -> None:
     )
 
     assert backend.model == Path("ggml-base.en.bin")
+
+
+def test_make_streaming_stt_returns_moonshine_backend() -> None:
+    backend = make_streaming_stt(
+        AgentConfig(
+            stt="moonshine_streaming",
+            moonshine_language="en",
+            moonshine_model="tiny_streaming",
+            moonshine_update_interval=0.1,
+        )
+    )
+
+    assert backend is not None
+    assert backend.language == "en"
+    assert backend.model == "tiny_streaming"
+    assert backend.update_interval == 0.1

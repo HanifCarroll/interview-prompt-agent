@@ -15,7 +15,7 @@ Alpha. The repo is structured for public use, but the live voice stack depends
 on local model/runtime setup:
 
 - TEN VAD for speech activity detection.
-- `whisper.cpp` or `sherpa-onnx` for speech-to-text.
+- Moonshine streaming ASR, `whisper.cpp`, or `sherpa-onnx` for speech-to-text.
 - Kokoro or Chatterbox Turbo for local text-to-speech.
 - LM Studio with a local chat model for follow-up questions.
 
@@ -82,6 +82,12 @@ Install sherpa-onnx support:
 
 ```sh
 uv pip install sherpa-onnx
+```
+
+Install Moonshine streaming ASR support:
+
+```sh
+uv pip install moonshine-voice
 ```
 
 Install and load a faster LM Studio follow-up model:
@@ -185,6 +191,25 @@ uv run --extra live interview-agent run \
 
 If `tiny.en` misses the done phrase in your room/noise setup, use `base.en` for
 both `--whisper-control-model` and `--whisper-model`.
+
+For lower turn-transition latency, use Moonshine streaming ASR. This keeps the
+ASR model loaded, streams microphone audio while you speak, and uses the live
+transcript immediately after the explicit done phrase instead of blocking on a
+separate full-answer Whisper transcription:
+
+```sh
+uv run --extra live interview-agent run \
+  --stt moonshine_streaming \
+  --moonshine-model small_streaming \
+  --tts kokoro \
+  --input-device "MacBook Pro Microphone" \
+  --done-phrase next \
+  --done-phrase "next slide" \
+  --lmstudio-model qwen3-4b-instruct-2507 \
+  --lmstudio-max-tokens 120 \
+  --timings \
+  --max-turns 2
+```
 
 On Chatterbox startup you may see Hugging Face print `Fetching 10 files` even
 after the model has already been downloaded. If it says `Download complete:

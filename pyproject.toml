@@ -24,6 +24,7 @@ dev = [
   "ruff>=0.8",
 ]
 live = [
+  "moonshine-voice>=0.0.65",
   "numpy>=2.0.2",
   "sounddevice>=0.4.6",
 ]

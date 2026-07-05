@@ -12,7 +12,7 @@ import warnings
 from pathlib import Path
 
 from interview_prompt_agent.agent import InterviewAgent
-from interview_prompt_agent.config import AgentConfig, RuntimePaths
+from interview_prompt_agent.config import DEFAULT_DONE_PHRASES, AgentConfig, RuntimePaths
 from interview_prompt_agent.errors import AgentError
 from interview_prompt_agent.factories import make_followup, make_stt, make_tts, make_vad
 
@@ -56,9 +56,19 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--session-dir", type=Path, default=Path("sessions"))
     run_parser.add_argument("--max-turns", type=int, default=3)
     run_parser.add_argument("--initial-question", default="What should we talk through first?")
+    run_parser.add_argument(
+        "--done-phrase",
+        action="append",
+        default=[],
+        help="Additional explicit phrase that ends the current answer. Can be repeated.",
+    )
     run_parser.add_argument("--voice-reference", type=Path)
     run_parser.add_argument("--input-device")
-    run_parser.add_argument("--stt", choices=["whisper_cpp", "sherpa_onnx"], default="whisper_cpp")
+    run_parser.add_argument(
+        "--stt",
+        choices=["whisper_cpp", "sherpa_onnx", "moonshine_streaming"],
+        default="whisper_cpp",
+    )
     run_parser.add_argument(
         "--tts",
         choices=["chatterbox_turbo", "kokoro", "macos_say"],
@@ -75,6 +85,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument("--poll-seconds", type=float, default=2.0)
     run_parser.add_argument("--tail-seconds", type=float, default=8.0)
+    run_parser.add_argument("--moonshine-language", default="en")
+    run_parser.add_argument(
+        "--moonshine-model",
+        choices=[
+            "tiny",
+            "base",
+            "tiny_streaming",
+            "base_streaming",
+            "small_streaming",
+            "medium_streaming",
+        ],
+        default="small_streaming",
+    )
+    run_parser.add_argument("--moonshine-update-interval", type=float, default=0.25)
     run_parser.add_argument("--sherpa-model-dir", type=Path)
     run_parser.add_argument(
         "--sherpa-model-kind",
@@ -85,6 +109,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--lmstudio-url", default="http://localhost:1234/v1/chat/completions")
     run_parser.add_argument("--lmstudio-model", default="gemma-4-26b-a4b-it")
     run_parser.add_argument("--lmstudio-max-tokens", type=int, default=1024)
+    run_parser.add_argument("--timings", action="store_true")
 
     ref_parser = sub.add_parser("record-reference", help="Record a Chatterbox voice reference")
     ref_parser.add_argument("output", type=Path)
@@ -125,6 +150,7 @@ def doctor(args: argparse.Namespace) -> int:
         ("ten_vad", "ten_vad"),
         ("chatterbox", "chatterbox"),
         ("kokoro_onnx", "kokoro_onnx"),
+        ("moonshine_voice", "moonshine_voice"),
         ("sherpa_onnx", "sherpa_onnx"),
     ):
         if importlib.util.find_spec(package):
@@ -173,7 +199,11 @@ def run(args: argparse.Namespace) -> int:
         followup=args.followup,
         session_dir=args.session_dir,
         initial_question=args.initial_question,
+        done_phrases=tuple(dict.fromkeys((*DEFAULT_DONE_PHRASES, *args.done_phrase))),
         voice_reference=args.voice_reference,
+        moonshine_language=args.moonshine_language,
+        moonshine_model=args.moonshine_model,
+        moonshine_update_interval=args.moonshine_update_interval,
         kokoro_voice=args.kokoro_voice,
         input_device=_coerce_device(args.input_device),
         poll_seconds=args.poll_seconds,
@@ -181,6 +211,7 @@ def run(args: argparse.Namespace) -> int:
         lmstudio_url=args.lmstudio_url,
         lmstudio_model=args.lmstudio_model,
         lmstudio_max_tokens=args.lmstudio_max_tokens,
+        timings=args.timings,
     )
     paths = RuntimePaths(
         whisper_cli=args.whisper_cli,

@@ -15,6 +15,14 @@ def test_help_includes_reference_commands() -> None:
     assert "make-reference" in output
 
 
+def test_run_help_includes_done_phrase() -> None:
+    subparsers = next(
+        action for action in build_parser()._actions if action.dest == "command"
+    ).choices
+
+    assert "--done-phrase" in subparsers["run"].format_help()
+
+
 def test_keyboard_interrupt_exits_cleanly(monkeypatch, capsys) -> None:
     def raise_interrupt(args) -> int:
         raise KeyboardInterrupt
@@ -24,3 +32,21 @@ def test_keyboard_interrupt_exits_cleanly(monkeypatch, capsys) -> None:
     assert cli.main(["run"]) == 130
     output = capsys.readouterr().out
     assert "Interrupted. Exiting cleanly." in output
+
+
+def test_run_merges_default_and_extra_done_phrases(monkeypatch) -> None:
+    captured = {}
+
+    class FakeAgent:
+        def __init__(self, config, paths) -> None:
+            del paths
+            captured["done_phrases"] = config.done_phrases
+
+        def run(self, *, max_turns: int):
+            del max_turns
+            return "sessions/test"
+
+    monkeypatch.setattr(cli, "InterviewAgent", FakeAgent)
+
+    assert cli.main(["run", "--done-phrase", "next"]) == 0
+    assert captured["done_phrases"] == ("next question", "next")

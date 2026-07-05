@@ -7,6 +7,7 @@ from interview_prompt_agent.followup.base import FollowupBackend
 from interview_prompt_agent.followup.lmstudio import LMStudioFollowupBackend
 from interview_prompt_agent.followup.static import StaticFollowupBackend
 from interview_prompt_agent.stt.base import STTBackend
+from interview_prompt_agent.stt.moonshine_streaming import MoonshineStreamingBackend
 from interview_prompt_agent.stt.sherpa_onnx import SherpaOnnxBackend
 from interview_prompt_agent.stt.whisper_cpp import WhisperCppBackend
 from interview_prompt_agent.tts.base import TTSBackend
@@ -41,6 +42,16 @@ def make_stt(name: str, paths: RuntimePaths, *, control: bool = False) -> STTBac
 
 def make_control_stt(name: str, paths: RuntimePaths) -> STTBackend:
     return make_stt(name, paths, control=True)
+
+
+def make_streaming_stt(config: AgentConfig) -> MoonshineStreamingBackend | None:
+    if config.stt == "moonshine_streaming":
+        return MoonshineStreamingBackend(
+            language=config.moonshine_language,
+            model=config.moonshine_model,
+            update_interval=config.moonshine_update_interval,
+        )
+    return None
 
 
 def make_tts(config: AgentConfig) -> TTSBackend:

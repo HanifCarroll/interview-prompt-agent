@@ -23,11 +23,15 @@ class AgentConfig:
     session_dir: Path = Path("sessions")
     initial_question: str = "What should we talk through first?"
     voice_reference: Path | None = None
+    moonshine_language: str = "en"
+    moonshine_model: str = "small_streaming"
+    moonshine_update_interval: float = 0.25
     kokoro_voice: str = "af_heart"
     allow_tts_fallback: bool = False
     lmstudio_url: str = "http://localhost:1234/v1/chat/completions"
     lmstudio_model: str = "gemma-4-26b-a4b-it"
     lmstudio_max_tokens: int = 1024
+    timings: bool = False
 
 
 @dataclass(frozen=True)
