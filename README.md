@@ -187,8 +187,9 @@ uv run --extra live interview-agent run \
 Kokoro downloads the int8 ONNX model and voices file on first use, then reuses
 them from `.cache/`.
 
-Run with Supertonic for a faster local voice that still sounds more natural than
-the smallest system voices:
+Run with Supertonic for a faster local voice. Local smoke tests showed
+Supertonic can occasionally drop or mangle words in short prompts, so use Piper
+when prompt intelligibility matters more than tone:
 
 ```sh
 uv run --extra live interview-agent run \
@@ -199,13 +200,15 @@ uv run --extra live interview-agent run \
   --max-turns 2
 ```
 
-Supertonic includes multiple local speakers. If the default voice has bad
-inflection, try another speaker ID:
+Supertonic includes multiple local speakers. Speaker `0` is the default because
+it was the most reliable Supertonic speaker in local short-prompt smoke tests.
+Other speaker IDs may sound different, but several dropped words from the start
+of short questions.
 
 ```sh
 uv run --extra live interview-agent run \
   --tts supertonic \
-  --tts-speaker-id 3 \
+  --tts-speaker-id 6 \
   --input-device "MacBook Pro Microphone" \
   --whisper-model "$WHISPER_MODEL" \
   --max-turns 2

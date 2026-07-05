@@ -76,3 +76,10 @@ def test_make_tts_returns_supertonic_backend() -> None:
     assert backend.speaker_id == 3
     assert backend.speed == 1.2
     assert backend.model_dir == Path("models/supertonic")
+
+
+def test_make_tts_uses_supertonic_speaker_zero_by_default() -> None:
+    backend = make_tts(AgentConfig(tts="supertonic"))
+
+    assert isinstance(backend, SupertonicBackend)
+    assert backend.speaker_id == 0

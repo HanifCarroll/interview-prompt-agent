@@ -35,6 +35,7 @@ SUPERTONIC_FILES = (
     "unicode_indexer.bin",
     "voice.bin",
 )
+DEFAULT_LEAD_IN_SECONDS = 0.35
 
 
 class PiperBackend(TTSBackend):
@@ -107,9 +108,10 @@ class PiperBackend(TTSBackend):
         return _cache_path(
             namespace="piper",
             identity=[
-                "piper_vits_lessac_medium_v1",
+                "piper_vits_lessac_medium_v2",
                 text,
                 str(self.speed),
+                str(DEFAULT_LEAD_IN_SECONDS),
                 str(model_dir.resolve()),
             ],
         )
@@ -182,10 +184,11 @@ class SupertonicBackend(TTSBackend):
         return _cache_path(
             namespace="supertonic",
             identity=[
-                "supertonic_int8_v1",
+                "supertonic_int8_v2",
                 text,
                 str(self.speaker_id),
                 str(self.speed),
+                str(DEFAULT_LEAD_IN_SECONDS),
                 str(model_dir.resolve()),
             ],
         )
@@ -219,6 +222,8 @@ def _write_generated_audio(path: Path, audio: object) -> Path:
         ) from exc
     samples = np.asarray(audio.samples, dtype=np.float32).reshape(-1)
     samples = np.clip(samples, -1.0, 1.0)
+    leading_silence = np.zeros(int(audio.sample_rate * DEFAULT_LEAD_IN_SECONDS), dtype=np.float32)
+    samples = np.concatenate([leading_silence, samples])
     pcm16 = (samples * 32767).astype(np.int16).tobytes()
     return write_pcm16_wav(path, pcm16, sample_rate=audio.sample_rate, channels=1)
 
